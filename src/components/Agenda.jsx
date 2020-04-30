@@ -12,7 +12,8 @@ import {
   Button,
   TextField,
   Grid,
-  Collapse
+  Collapse,
+  NativeSelect
 } from "@material-ui/core";
 import DateFnsUtils from '@date-io/date-fns';
 import {
@@ -53,6 +54,21 @@ export default class Agenda extends React.Component{
         return (
             <>
                 <div className='demo-app'>
+                    
+                    <NativeSelect
+                      className='selecSala'
+                      value={this.state.sala}
+                      onChange={this.handleChangeSala}
+                      inputProps={{
+                        name: 'Sala',
+                        id: 'age-native-helper',
+                      }}
+                    >
+                      <option aria-label="None" value="" />
+                      <option value={1}>Sala 1</option>
+                      <option value={2}>Sala 2</option>
+                      <option value={3}>Sala 2</option>
+                    </NativeSelect>
                     <div className='demo-app-calendar'>
                     <FullCalendar
                         defaultView="timeGridWeek"
@@ -202,7 +218,7 @@ export default class Agenda extends React.Component{
       })
     }else{
       const data = {
-        "sala": 1,
+        "sala": this.state.sala,
         "tema": this.state.tema,
         "responsavel": this.state.responsavel,
         "dataInit": moment(this.state.selectedDateInit).format("YYYY-MM-DD HH:mm"),
@@ -281,4 +297,15 @@ export default class Agenda extends React.Component{
       alertOpen: false
     });
   }
+
+  handleChangeSala = async (event) => {
+    let idSala = event.target.value;
+    idSala = parseInt(idSala) 
+    this.setState({ 
+      sala:idSala
+    });
+    const response = await AgendaApi.get(`agenda/${idSala}`);
+
+    this.loadData(response)
+  };
 }

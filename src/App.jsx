@@ -21,7 +21,7 @@ export default class App extends React.Component{
                 <MenuIcon />
               </IconButton>
               <Typography variant="h6">
-                Sala 1
+                Meeting Now
               </Typography>
             </Toolbar>
           </AppBar>
