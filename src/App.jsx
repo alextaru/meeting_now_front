@@ -14,7 +14,8 @@ import {
   DialogTitle,
   Button,
   TextField,
-  Grid
+  Grid,
+  Collapse
 } from "@material-ui/core";
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -24,6 +25,10 @@ import {
   KeyboardTimePicker,
   KeyboardDatePicker,
 } from '@material-ui/pickers';
+import moment from "moment";
+import Alert from '@material-ui/lab/Alert';
+
+import AgendaApi from "./services/AgendaApi";
 
 
 
@@ -38,7 +43,17 @@ export default class App extends React.Component{
     calendarWeekends: true,
     calendarEvents: [{}],
     responsavel: "",
-    tema: ""
+    tema: "",
+    sala: 1,
+    alertOpen: false,
+    menssagem: "erro"
+  }
+
+  async componentDidMount(){
+      
+      const response = await AgendaApi.get(`agenda/${this.state.sala}`);
+
+      this.loadData(response)
   }
 
   render() {
@@ -74,6 +89,11 @@ export default class App extends React.Component{
           </div>
         </div>
         <Dialog open={this.state.open} onClose={this.handleClose} aria-labelledby="form-dialog-title">
+          <Collapse in={this.state.alertOpen}>
+            <Alert variant="filled" severity="error">
+              {this.state.menssagem}
+            </Alert>
+          </Collapse>
           <DialogTitle id="form-dialog-title">Agendar Reunião</DialogTitle>
           <DialogContent>
             <DialogContentText>
@@ -133,7 +153,7 @@ export default class App extends React.Component{
                   format="dd/MM/yyyy"
                   margin="normal"
                   id="date-picker-end"
-                  label="Data termino"
+                  label="Data término"
                   value={this.state.selectedDateAnd}
                   onChange={this.handleDateChangeEnd}
                   KeyboardButtonProps={{
@@ -144,7 +164,7 @@ export default class App extends React.Component{
                 <KeyboardTimePicker
                   margin="normal"
                   id="time-picker_end"
-                  label="Hora termino"
+                  label="Hora término"
                   value={this.state.selectedDateAnd}
                   onChange={this.handleDateChangeEnd}
                   KeyboardButtonProps={{
@@ -185,23 +205,43 @@ export default class App extends React.Component{
     })
   };
 
-  handleAgendar = () => {
-    const titleTemp = this.state.tema + " - " + this.state.responsavel
+  handleAgendar = async () => {
+    const validacaoData = moment(this.state.selectedDateInit).isBefore(this.state.selectedDateAnd);
 
-
-    this.setState({ 
-      open: false,
-      calendarEvents: this.state.calendarEvents.concat({ // creates a new array
-        title: titleTemp,
-        start: this.state.selectedDateInit,
-        end: this.state.selectedDateAnd
+    if(!validacaoData){
+      this.setState({
+        alertOpen: true,
+        menssagem: "Data término não pode ser antes de data inicial - Favor escolher outra data"
       })
-    })
+    }else if(!this.state.tema || !this.state.responsavel){
+      this.setState({
+        alertOpen: true,
+        menssagem: "Todos os campos são obrigatórios - Favor preencher"
+      })
+    }else{
+      const data = {
+        "sala": 1,
+        "tema": this.state.tema,
+        "responsavel": this.state.responsavel,
+        "dataInit": moment(this.state.selectedDateInit).format("YYYY-MM-DD HH:mm"),
+        "dataEnd": moment(this.state.selectedDateAnd).format("YYYY-MM-DD HH:mm")
+      }
+      try {
+        const response = await AgendaApi.post(`agenda`, data);
+        this.loadData(response)
+      } catch (error) {
+        this.setState({
+          alertOpen: true,
+          menssagem: "Data inválida - Favor escolher outra data"
+        })
+      }
+    }
   }
   
   handleClose = () => {
     this.setState({ 
       open: false,
+      alertOpen: false
     })
   };
 
@@ -231,19 +271,33 @@ export default class App extends React.Component{
 
   handleDateClick = (arg) => {
     this.setState({ 
-      selectedDateInit: arg.date,
-      selectedDateAnd: arg.date
+      selectedDateInit: arg.dateStr,
+      selectedDateAnd: arg.dateStr,
+      responsavel: "",
+      tema: ""
     })
     this.handleClickOpen()
-    
-      /* this.setState({  // add new event data
-        calendarEvents: this.state.calendarEvents.concat({ // creates a new array
-          title: 'New Event',
-          start: arg.date,
-          allDay: arg.allDay
-        })
-      }) */
-    
+  }
+
+  loadData(response){
+    response = response.data.map(item => {
+      const descricao = item.tema + " - " + item.responsavel
+
+      const modelo = {
+        title: descricao,
+        start: new Date(item.dataInit),
+        end: new Date(item.dataEnd)
+      }
+      
+      return modelo
+      
+    })
+
+    this.setState({ 
+      open: false,
+      calendarEvents: response,
+      alertOpen: false
+    });
   }
 
   
