@@ -45,7 +45,7 @@ export default class Agenda extends React.Component{
 
     async componentDidMount(){
         
-        const response = await AgendaApi.get(`agenda/${this.state.sala}`);
+        const response = await AgendaApi.get(`agenda/sala/${this.state.sala}`);
 
         this.loadData(response)
     }
@@ -304,7 +304,7 @@ export default class Agenda extends React.Component{
     this.setState({ 
       sala:idSala
     });
-    const response = await AgendaApi.get(`agenda/${idSala}`);
+    const response = await AgendaApi.get(`agenda/sala/${idSala}`);
 
     this.loadData(response)
   };
